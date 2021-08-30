@@ -81,6 +81,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -116,8 +117,9 @@ public class InAppBrowser extends CordovaPlugin {
     private static final String FOOTER_COLOR = "footercolor";
     private static final String BEFORELOAD = "beforeload";
     private static final String FULLSCREEN = "fullscreen";
+    private static final String SESSION = "session";
 
-    private static final List customizableOptions = Arrays.asList(CLOSE_BUTTON_CAPTION, TOOLBAR_COLOR, NAVIGATION_COLOR, CLOSE_BUTTON_COLOR, FOOTER_COLOR);
+    private static final List customizableOptions = Arrays.asList(CLOSE_BUTTON_CAPTION, TOOLBAR_COLOR, NAVIGATION_COLOR, CLOSE_BUTTON_COLOR, FOOTER_COLOR, SESSION);
 
     private InAppBrowserDialog dialog;
     private WebView inAppWebView;
@@ -147,6 +149,8 @@ public class InAppBrowser extends CordovaPlugin {
     private boolean fullscreen = true;
     private String[] allowedSchemes;
     private InAppBrowserClient currentClient;
+    private String session = "";
+    private Map <String, String> extraHeaders;
 
     /**
      * Executes the request and returns PluginResult.
@@ -166,6 +170,10 @@ public class InAppBrowser extends CordovaPlugin {
             }
             final String target = t;
             final HashMap<String, String> features = parseFeature(args.optString(2));
+
+            session = features.get(SESSION);
+            extraHeaders = new HashMap<String, String>();
+            extraHeaders.put("Cookie", "session=".concat(session));
 
             LOG.d(LOG_TAG, "target = " + target);
 
@@ -596,9 +604,9 @@ public class InAppBrowser extends CordovaPlugin {
         imm.hideSoftInputFromWindow(edittext.getWindowToken(), 0);
 
         if (!url.startsWith("http") && !url.startsWith("file:")) {
-            this.inAppWebView.loadUrl("http://" + url);
+            this.inAppWebView.loadUrl("http://" + url, extraHeaders);
         } else {
-            this.inAppWebView.loadUrl(url);
+            this.inAppWebView.loadUrl(url, extraHeaders);
         }
         this.inAppWebView.requestFocus();
     }
@@ -940,6 +948,10 @@ public class InAppBrowser extends CordovaPlugin {
                 currentClient = new InAppBrowserClient(thatWebView, edittext, beforeload);
                 inAppWebView.setWebViewClient(currentClient);
                 WebSettings settings = inAppWebView.getSettings();
+                try {
+                    settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+                    CookieManager.getInstance().setAcceptThirdPartyCookies(inAppWebView, true);
+                } catch (NoSuchMethodError e) {}
                 settings.setJavaScriptEnabled(true);
                 settings.setJavaScriptCanOpenWindowsAutomatically(true);
                 settings.setBuiltInZoomControls(showZoomControls);
@@ -992,7 +1004,7 @@ public class InAppBrowser extends CordovaPlugin {
                 // Enable Thirdparty Cookies
                 CookieManager.getInstance().setAcceptThirdPartyCookies(inAppWebView,true);
 
-                inAppWebView.loadUrl(url);
+                inAppWebView.loadUrl(url, extraHeaders);
                 inAppWebView.setId(Integer.valueOf(6));
                 inAppWebView.getSettings().setLoadWithOverviewMode(true);
                 inAppWebView.getSettings().setUseWideViewPort(useWideViewPort);
@@ -1202,6 +1214,12 @@ public class InAppBrowser extends CordovaPlugin {
                 }
             } else if (url.startsWith("geo:") || url.startsWith(WebView.SCHEME_MAILTO) || url.startsWith("market:") || url.startsWith("intent:")) {
                 try {
+                    if(url.startsWith("intent:") && url.indexOf("connectpro") > -1){
+                        StringBuilder urlSb = new StringBuilder(url);
+                        urlSb.replace(0, 6, "connectpro");
+                        url = urlSb.toString();
+                    }
+
                     Intent intent = new Intent(Intent.ACTION_VIEW);
                     intent.setData(Uri.parse(url));
                     cordova.getActivity().startActivity(intent);
