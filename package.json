@@ -1,11 +1,10 @@
 {
-  "name": "cordova-plugin-inappbrowser",
-  "version": "4.1.0",
-  "wgVersoin": "2",
+  "name": "wg-cordova-plugin-inappbrowser",
+  "version": "4.1.0-3",
   "description": "Cordova InAppBrowser Plugin",
   "types": "./types/index.d.ts",
   "cordova": {
-    "id": "cordova-plugin-inappbrowser",
+    "id": "wg-cordova-plugin-inappbrowser",
     "platforms": [
       "android",
       "browser",
