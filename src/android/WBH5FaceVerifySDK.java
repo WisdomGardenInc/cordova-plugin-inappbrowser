@@ -290,4 +290,8 @@ public class WBH5FaceVerifySDK {
         }
     }
 
+    public static WBH5FaceVerifySDK getInstanceWithoutCreate() {
+        return instance ;
+    }
+
 }
