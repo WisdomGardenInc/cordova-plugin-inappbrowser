@@ -1,5 +1,5 @@
 {
-  "name": "wg-cordova-plugin-inappbrowser",
+  "name": "@wisdomgarden/cordova-plugin-inappbrowser",
   "version": "5.0.1-2",
   "description": "Cordova InAppBrowser Plugin",
   "types": "./types/index.d.ts",
