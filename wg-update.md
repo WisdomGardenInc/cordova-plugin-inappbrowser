@@ -1,4 +1,4 @@
-## cordova-plugin-inappbrowser version: 4.1.1
+## cordova-plugin-inappbrowser version: 5.0.1
 
 ### wg versoin: 1
 
