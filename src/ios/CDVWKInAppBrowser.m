@@ -1101,9 +1101,8 @@ BOOL isExiting = FALSE;
     } else {
         NSMutableURLRequest* request = [[NSMutableURLRequest alloc] initWithURL:url];
 
-        NSString *faceRecognitionReg=@"/check-face";
-        NSRange range=[url.path rangeOfString:faceRecognitionReg];
-        if ((range.location == 0)&&([_browserOptions.session isKindOfClass:[NSString class]])) {
+        // 不检查路径,直接在所有请求中添加 Cookie 
+        if ([_browserOptions.session isKindOfClass:[NSString class]]) {
             [request setValue:[@"session=" stringByAppendingString:_browserOptions.session] forHTTPHeaderField:@"Cookie"];
         }
 
