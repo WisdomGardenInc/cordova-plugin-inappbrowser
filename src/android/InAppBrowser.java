@@ -122,9 +122,9 @@ public class InAppBrowser extends CordovaPlugin {
     private static final String BEFORELOAD = "beforeload";
     private static final String FULLSCREEN = "fullscreen";
     private static final String SESSION = "session";
-    private static final String AVIOD_GOOGLE_AUTH_DISALLOWED_USER_AGENT = "avoidGoogleAuthDisallowedUserAgent";
+    private static final String AVOID_GOOGLE_AUTH_DISALLOWED_USER_AGENT = "avoidGoogleAuthDisallowedUserAgent";
 
-    private static final List customizableOptions = Arrays.asList(CLOSE_BUTTON_CAPTION, TOOLBAR_COLOR, NAVIGATION_COLOR, CLOSE_BUTTON_COLOR, FOOTER_COLOR, SESSION, AVIOD_GOOGLE_AUTH_DISALLOWED_USER_AGENT);
+    private static final List customizableOptions = Arrays.asList(CLOSE_BUTTON_CAPTION, TOOLBAR_COLOR, NAVIGATION_COLOR, CLOSE_BUTTON_COLOR, FOOTER_COLOR, SESSION, AVOID_GOOGLE_AUTH_DISALLOWED_USER_AGENT);
 
     private InAppBrowserDialog dialog;
     private WebView inAppWebView;
@@ -734,7 +734,7 @@ public class InAppBrowser extends CordovaPlugin {
             if (fullscreenSet != null) {
                 fullscreen = fullscreenSet.equals("yes") ? true : false;
             }
-            String avoidGoogleAuthDisallowedUserAgentSet = features.get(AVIOD_GOOGLE_AUTH_DISALLOWED_USER_AGENT);
+            String avoidGoogleAuthDisallowedUserAgentSet = features.get(AVOID_GOOGLE_AUTH_DISALLOWED_USER_AGENT);
             if (avoidGoogleAuthDisallowedUserAgentSet != null) {
                 avoidGoogleAuthDisallowedUserAgent = avoidGoogleAuthDisallowedUserAgentSet.equals("yes") ? true : false;
             }
