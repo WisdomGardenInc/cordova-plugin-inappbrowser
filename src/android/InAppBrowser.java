@@ -122,8 +122,9 @@ public class InAppBrowser extends CordovaPlugin {
     private static final String BEFORELOAD = "beforeload";
     private static final String FULLSCREEN = "fullscreen";
     private static final String SESSION = "session";
+    private static final String AVIOD_GOOGLE_AUTH_DISALLOWED_USER_AGENT = "avoidGoogleAuthDisallowedUserAgent";
 
-    private static final List customizableOptions = Arrays.asList(CLOSE_BUTTON_CAPTION, TOOLBAR_COLOR, NAVIGATION_COLOR, CLOSE_BUTTON_COLOR, FOOTER_COLOR, SESSION);
+    private static final List customizableOptions = Arrays.asList(CLOSE_BUTTON_CAPTION, TOOLBAR_COLOR, NAVIGATION_COLOR, CLOSE_BUTTON_COLOR, FOOTER_COLOR, SESSION, AVIOD_GOOGLE_AUTH_DISALLOWED_USER_AGENT);
 
     private InAppBrowserDialog dialog;
     private WebView inAppWebView;
@@ -136,6 +137,7 @@ public class InAppBrowser extends CordovaPlugin {
     private boolean clearSessionCache = false;
     private boolean hadwareBackButton = true;
     private boolean mediaPlaybackRequiresUserGesture = false;
+    private boolean avoidGoogleAuthDisallowedUserAgent = false;
     private boolean shouldPauseInAppBrowser = false;
     private boolean useWideViewPort = true;
     private ValueCallback<Uri> mUploadCallback;
@@ -648,6 +650,7 @@ public class InAppBrowser extends CordovaPlugin {
         showZoomControls = true;
         openWindowHidden = false;
         mediaPlaybackRequiresUserGesture = false;
+        avoidGoogleAuthDisallowedUserAgent = false;
 
         final InAppBrowser plugin = this;
 
@@ -730,6 +733,10 @@ public class InAppBrowser extends CordovaPlugin {
             String fullscreenSet = features.get(FULLSCREEN);
             if (fullscreenSet != null) {
                 fullscreen = fullscreenSet.equals("yes") ? true : false;
+            }
+            String avoidGoogleAuthDisallowedUserAgentSet = features.get(AVIOD_GOOGLE_AUTH_DISALLOWED_USER_AGENT);
+            if (avoidGoogleAuthDisallowedUserAgentSet != null) {
+                avoidGoogleAuthDisallowedUserAgent = avoidGoogleAuthDisallowedUserAgentSet.equals("yes") ? true : false;
             }
         }
 
@@ -1041,7 +1048,12 @@ public class InAppBrowser extends CordovaPlugin {
                     settings.setUserAgentString(overrideUserAgent);
                 }
                 if (appendUserAgent != null) {
-                    settings.setUserAgentString(settings.getUserAgentString() + appendUserAgent);
+                    settings.setUserAgentString((settings.getUserAgentString() + appendUserAgent));
+                }
+
+                // google auth 403, check "wv" keywords
+                if(avoidGoogleAuthDisallowedUserAgent) {
+                    settings.setUserAgentString((settings.getUserAgentString().replaceAll("(?<!\\w)wv(?!\\w)", "")));
                 }
 
                 //Toggle whether this is enabled or not!

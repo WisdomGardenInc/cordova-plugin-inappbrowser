@@ -87,6 +87,8 @@ static CDVWKInAppBrowser* instance = nil;
     return NO;
 }
 
+NSString* avoidGoogleAuthDisallowedUserAgentKeywords = @"Safari/604.1";
+
 - (void)open:(CDVInvokedUrlCommand*)command
 {
     CDVPluginResult* pluginResult;
@@ -737,6 +739,12 @@ BOOL isExiting = FALSE;
         ) {
         userAgent = [NSString stringWithFormat:@"%@ %@", userAgent, [self settingForKey:@"AppendUserAgent"]];
     }
+    
+    // google auth 403, append "Safari/604.1" keywords
+    if(_browserOptions.avoidgoogleauthdisalloweduseragent) {
+        userAgent = [NSString stringWithFormat:@"%@ %@", userAgent, avoidGoogleAuthDisallowedUserAgentKeywords];
+    }
+    
     configuration.applicationNameForUserAgent = userAgent;
     configuration.userContentController = userContentController;
 #if __has_include("CDVWKProcessPoolFactory.h")

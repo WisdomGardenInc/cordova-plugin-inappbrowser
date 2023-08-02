@@ -39,6 +39,7 @@
 @property (nonatomic, copy) NSString* transitionstyle;
 
 @property (nonatomic, copy) NSString* session;
+@property (nonatomic, assign) BOOL avoidgoogleauthdisalloweduseragent;
 
 @property (nonatomic, assign) BOOL enableviewportscale;
 @property (nonatomic, assign) BOOL mediaplaybackrequiresuseraction;
