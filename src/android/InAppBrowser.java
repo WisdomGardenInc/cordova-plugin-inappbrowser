@@ -1053,7 +1053,8 @@ public class InAppBrowser extends CordovaPlugin {
 
                 // google auth 403, check "wv" keywords
                 if(avoidGoogleAuthDisallowedUserAgent) {
-                    settings.setUserAgentString((settings.getUserAgentString().replaceAll("(?<!\\w)wv(?!\\w)", "")));
+                    String userAgent = settings.getUserAgentString();
+                    settings.setUserAgentString(userAgent.replaceAll("(?<!\\w)wv(?!\\w)", "").replaceAll("Chrome/[\\d.]+", "Chrome/92.0.4515.105"));
                 }
 
                 //Toggle whether this is enabled or not!
