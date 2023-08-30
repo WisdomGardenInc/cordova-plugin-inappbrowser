@@ -1110,7 +1110,8 @@ BOOL isExiting = FALSE;
         NSMutableURLRequest* request = [[NSMutableURLRequest alloc] initWithURL:url];
 
         // 不检查路径,直接在所有请求中添加 Cookie 
-        if ([_browserOptions.session isKindOfClass:[NSString class]]) {
+        // 如果 app 传递过来 session，都加到请求头里去
+        if (![_browserOptions.session isEqualToString:@"no-session"]) {
             [request setValue:[@"session=" stringByAppendingString:_browserOptions.session] forHTTPHeaderField:@"Cookie"];
         }
 

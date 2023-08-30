@@ -45,7 +45,7 @@
         self.toolbarcolor = nil;
         self.toolbartranslucent = YES;
         self.beforeload = @"";
-        self.session = @"";
+        self.session = @"no-session";
         self.avoidgoogleauthdisalloweduseragent = NO;
     }
 
