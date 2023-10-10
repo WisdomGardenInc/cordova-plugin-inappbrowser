@@ -1,6 +1,6 @@
 {
   "name": "@wisdomgarden/cordova-plugin-inappbrowser",
-  "version": "5.0.1-8",
+  "version": "5.0.1-9",
   "description": "Cordova InAppBrowser Plugin",
   "types": "./types/index.d.ts",
   "cordova": {
