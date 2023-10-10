@@ -13,3 +13,6 @@ avoid google oauth error: 403：disallowed_useragent
 
 ### version 5.0.1-8
 fix ios session default value
+
+### version 5.0.1-9
+fix ios orientation bug
