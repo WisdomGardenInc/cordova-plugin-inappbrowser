@@ -16,3 +16,6 @@ fix ios session default value
 
 ### version 5.0.1-10
 revert 5.0.1-9
+
+### version 5.0.1-11
+support android 13
