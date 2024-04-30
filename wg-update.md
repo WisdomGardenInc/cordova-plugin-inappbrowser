@@ -19,3 +19,6 @@ revert 5.0.1-9
 
 ### version 5.0.1-11
 support android 13
+
+### version 5.0.1-12
+support ios SDK 17.4 webview setInspectable
