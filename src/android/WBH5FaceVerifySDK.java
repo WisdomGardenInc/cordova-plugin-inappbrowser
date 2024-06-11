@@ -210,8 +210,8 @@ public class WBH5FaceVerifySDK {
 
     @TargetApi(21)
     public boolean recordVideoForApi21(WebView webView, ValueCallback<Uri[]> filePathCallback, Activity activity, WebChromeClient.FileChooserParams fileChooserParams) {
-        Log.d("faceVerify","accept is "+fileChooserParams.getAcceptTypes()[0]+"---url---"+webView.getUrl());
-        if ("video/webank".equals(fileChooserParams.getAcceptTypes()[0])||webView.getUrl().startsWith("https://ida.webank.com/")) { //是h5刷脸
+        Log.d("faceVerify", "accept is " + fileChooserParams.getAcceptTypes()[0] + "---url---" + webView.getUrl());
+        if ("video/webank".equals(fileChooserParams.getAcceptTypes()[0]) || webView.getUrl().startsWith("https://ida.webank.com/")) { //是h5刷脸
             setmUploadCallbackAboveL(filePathCallback);
             recordVideo();
             return true;
@@ -247,35 +247,48 @@ public class WBH5FaceVerifySDK {
         mUploadCallbackAboveL = uploadCallbackAboveL;
     }
 
+    private boolean hasWriteExternalStoragePermission() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            return cordova.hasPermission(android.Manifest.permission.READ_MEDIA_IMAGES);
+        }
+        return cordova.hasPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
+    }
+
+
+    private String[] getWriteExternalStoragePermissions() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            return new String[]{
+                    android.Manifest.permission.READ_MEDIA_IMAGES,
+                    android.Manifest.permission.READ_MEDIA_VIDEO,
+                    android.Manifest.permission.READ_MEDIA_AUDIO
+            };
+        }
+        return new String[]{
+                android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+        };
+    }
+
+    private String[] getRequestPermissions() {
+        String[] writePermissions = getWriteExternalStoragePermissions();
+        String[] cameraPermission = {android.Manifest.permission.CAMERA};
+
+        String[] permissions = new String[writePermissions.length + cameraPermission.length];
+        System.arraycopy(writePermissions, 0, permissions, 0, writePermissions.length);
+        System.arraycopy(cameraPermission, 0, permissions, writePermissions.length, cameraPermission.length);
+
+        return permissions;
+    }
+
     /**
      * 权限动态申请
      */
     public void requestPermission() {
 
-        if (cordova.hasPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) && cordova.hasPermission(android.Manifest.permission.CAMERA)) {
+        if (this.hasWriteExternalStoragePermission() && cordova.hasPermission(android.Manifest.permission.CAMERA)) {
             recordVideoPersmission();
         } else {
-            cordova.requestPermissions(this.plugin, REQUEST_CODE_CAMERA, new String[]{ android.Manifest.permission.WRITE_EXTERNAL_STORAGE,  android.Manifest.permission.CAMERA});
+            cordova.requestPermissions(this.plugin, REQUEST_CODE_CAMERA, this.getRequestPermissions());
         }
-
-//
-//        // checkSelfPermission 判断是否已经申请了此权限
-//        if ((ContextCompat.checkSelfPermission(context, android.Manifest.permission.CAMERA)
-//                != PackageManager.PERMISSION_GRANTED) ||
-//                (ContextCompat.checkSelfPermission(context,  android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-//                        != PackageManager.PERMISSION_GRANTED)) {
-//            //如果应用之前请求过此权限但用户拒绝了请求，shouldShowRequestPermissionRationale将返回 true。
-//            if (ActivityCompat.shouldShowRequestPermissionRationale(activity,
-//                    android.Manifest.permission.CAMERA)) {
-//                Toast.makeText(this.activity, "" + "权限申请失败", LENGTH_SHORT).show();
-//            } else {
-//                // ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.CAMERA}, REQUEST_CODE_CAMERA);
-//               this.activity.requestPermissions( new String[]{ android.Manifest.permission.WRITE_EXTERNAL_STORAGE,  android.Manifest.permission.CAMERA
-//                }, REQUEST_CODE_WRITE_EXTERNAL_STORAGE);
-//            }
-//        } else {
-//            recordVideoPersmission();
-//        }
     }
 
 
@@ -285,14 +298,16 @@ public class WBH5FaceVerifySDK {
                 if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
                     recordVideoPersmission();
                 } else {
-                    Toast.makeText(this.activity, "" + "权限申请失败", LENGTH_SHORT).show();
+                    String permission = permissions[i];
+                    Log.e("InAppBrowser", "Permission failed:" + permission);
+                    Toast.makeText(this.activity, "权限申请失败", LENGTH_SHORT).show();
                 }
             }
         }
     }
 
     public static WBH5FaceVerifySDK getInstanceWithoutCreate() {
-        return instance ;
+        return instance;
     }
 
 }
