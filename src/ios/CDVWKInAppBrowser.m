@@ -801,11 +801,11 @@ BOOL isExiting = FALSE;
     self.webView.allowsBackForwardNavigationGestures = NO;
 
 // for Safari inspect
-#if DEBUG && !NO_WEBVIEW_INSPECT
-    if (@available(iOS 16.4, *)) {
-        [self.webView setInspectable:YES];
-    }
-#endif
+// #if DEBUG && !NO_WEBVIEW_INSPECT
+//     if (@available(iOS 16.4, *)) {
+//         [self.webView setInspectable:YES];
+//     }
+// #endif
     
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000
    if (@available(iOS 11.0, *)) {
