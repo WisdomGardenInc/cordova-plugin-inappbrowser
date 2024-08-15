@@ -78,9 +78,11 @@ import org.apache.cordova.PluginResult;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -638,6 +640,20 @@ public class InAppBrowser extends CordovaPlugin {
         return this;
     }
 
+    private static JSONObject loadCapacitorConfig(Context context) {
+        try {
+            InputStream inputStream = context.getAssets().open("capacitor.config.json");
+            byte[] buffer = new byte[inputStream.available()];
+            inputStream.read(buffer);
+            inputStream.close();
+
+            String jsonStr = new String(buffer, StandardCharsets.UTF_8);
+            return new JSONObject(jsonStr);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     /**
      * Display a new browser with the specified URL.
      *
@@ -1043,6 +1059,18 @@ public class InAppBrowser extends CordovaPlugin {
 
                 String overrideUserAgent = preferences.getString("OverrideUserAgent", null);
                 String appendUserAgent = preferences.getString("AppendUserAgent", null);
+
+                JSONObject capacitorConfig = loadCapacitorConfig(cordova.getActivity().getApplicationContext());
+
+                if (capacitorConfig != null) {
+                    if (overrideUserAgent == null) {
+                        overrideUserAgent = capacitorConfig.optString("overrideUserAgent", null);
+                    }
+
+                    if (appendUserAgent == null) {
+                        appendUserAgent = capacitorConfig.optString("appendUserAgent", null);
+                    }
+                }
 
                 if (overrideUserAgent != null) {
                     settings.setUserAgentString(overrideUserAgent);

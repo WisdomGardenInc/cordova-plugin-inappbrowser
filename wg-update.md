@@ -34,3 +34,6 @@ replace WRITE_EXTERNAL_STORAGE to [READ_MEDIA_IMAGES,READ_MEDIA_VIDEO,READ_MEDIA
 
 ### version 5.0.1-15
 revert "support ios SDK 17.4 webview setInspectable" cause CI use the lower xCode dose not support
+
+### version 5.0.1-16
+Use capacitor.config.json to set inappbrowser userAgent.

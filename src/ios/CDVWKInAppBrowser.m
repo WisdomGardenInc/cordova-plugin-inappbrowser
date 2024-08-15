@@ -702,12 +702,50 @@ NSString* avoidGoogleAuthDisallowedUserAgentKeywords = @"Safari/604.1";
 CGFloat lastReducedStatusBarHeight = 0.0;
 BOOL isExiting = FALSE;
 
+
+- (NSDictionary *)loadCapacitorConfig {
+    NSString *path = [[NSBundle mainBundle] pathForResource:@"capacitor.config" ofType:@"json"];
+    if (!path) {
+        NSLog(@"Unable to find capacitor.config.json");
+        return @{};
+    }
+    
+    NSData *data = [NSData dataWithContentsOfFile:path];
+    if (!data) {
+        NSLog(@"Error reading capacitor.config.json");
+        return @{};
+    }
+    
+    NSError *jsonError;
+    NSDictionary *config = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:&jsonError];
+    if (jsonError) {
+        NSLog(@"Unable to parse capacitor.config.json: %@", jsonError.localizedDescription);
+        return @{};
+    }
+    
+    return config;
+}
+
 - (id)initWithBrowserOptions: (CDVInAppBrowserOptions*) browserOptions andSettings:(NSDictionary *)settings
 {
     self = [super init];
     if (self != nil) {
         _browserOptions = browserOptions;
-        _settings = settings;
+        
+        NSDictionary *capacitorConfig = [self loadCapacitorConfig];
+        NSString *overrideUserAgent = [capacitorConfig objectForKey:@"overrideUserAgent"];
+        NSString *appendUserAgent = [capacitorConfig objectForKey:@"appendUserAgent"];
+        NSMutableDictionary *mutableSettings = [settings mutableCopy];
+        
+        if (overrideUserAgent) {
+            [mutableSettings setObject:overrideUserAgent forKey:@"overrideuseragent"];
+        }
+        
+        if (appendUserAgent) {
+            [mutableSettings setObject:appendUserAgent forKey:@"appenduseragent"];
+        }
+        
+        _settings = [mutableSettings copy];
         self.webViewUIDelegate = [[CDVWKInAppBrowserUIDelegate alloc] initWithTitle:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"]];
         [self.webViewUIDelegate setViewController:self];
         
