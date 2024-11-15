@@ -248,21 +248,16 @@ public class WBH5FaceVerifySDK {
     }
 
     private boolean hasWriteExternalStoragePermission() {
+        // In Android 13 and above, the external storage permission is true by default
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            return cordova.hasPermission(android.Manifest.permission.READ_MEDIA_IMAGES);
+            return true;
         }
         return cordova.hasPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
     }
 
 
     private String[] getWriteExternalStoragePermissions() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            return new String[]{
-                    android.Manifest.permission.READ_MEDIA_IMAGES,
-                    android.Manifest.permission.READ_MEDIA_VIDEO,
-                    android.Manifest.permission.READ_MEDIA_AUDIO
-            };
-        }
+        // Used to obtain external storage permissions below Android 13
         return new String[]{
                 android.Manifest.permission.WRITE_EXTERNAL_STORAGE
         };

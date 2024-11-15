@@ -37,3 +37,6 @@ revert "support ios SDK 17.4 webview setInspectable" cause CI use the lower xCod
 
 ### version 5.0.1-16
 Use capacitor.config.json to set inappbrowser userAgent.
+
+### version 5.0.1-17
+Delete [READ_MEDIA_IMAGES,READ_MEDIA_VIDEO,READ_MEDIA_AUDIO] permission on Android 13 and above 
