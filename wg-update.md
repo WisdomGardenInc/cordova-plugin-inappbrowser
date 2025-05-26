@@ -40,3 +40,6 @@ Use capacitor.config.json to set inappbrowser userAgent.
 
 ### version 5.0.1-17
 Delete [READ_MEDIA_IMAGES,READ_MEDIA_VIDEO,READ_MEDIA_AUDIO] permission on Android 13 and above 
+
+### version 5.0.1-18
+Application.OpenURL doesn't work on iOS 18+
