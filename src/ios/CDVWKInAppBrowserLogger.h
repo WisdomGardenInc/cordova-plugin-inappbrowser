@@ -1,13 +1,13 @@
-// Logger.h
-#ifndef Logger_h
-#define Logger_h
+// CDVWKInAppBrowserLogger.h
+#ifndef CDVWKInAppBrowserLogger_h
+#define CDVWKInAppBrowserLogger_h
 
-// 日志级别定义（可选）
+// Log level definitions
 #define LOG_INFO    @"INFO"
 #define LOG_WARN    @"WARN"
 #define LOG_ERROR   @"ERROR"
 
-// 日志输出宏（会输出到 stderr，出现在 Xcode Console）
+// Log macro output to stderr (visible in Xcode console)
 #define AppLog(level, fmt, ...) \
     fprintf(stderr, "[%s] %s [Line %d] %s\n", \
         [level UTF8String], __FUNCTION__, __LINE__, \
@@ -17,4 +17,4 @@
 #define AppLogWarn(fmt, ...)  AppLog(LOG_WARN, fmt, ##__VA_ARGS__)
 #define AppLogError(fmt, ...) AppLog(LOG_ERROR, fmt, ##__VA_ARGS__)
 
-#endif /* Logger_h */
+#endif /* CDVWKInAppBrowserLogger_h */

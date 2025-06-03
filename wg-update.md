@@ -48,5 +48,9 @@ Application.OpenURL doesn't work on iOS 18+
 
 🛠 iOS Changes
 - InAppBrowser is now initialized only after browser data (cookies/cache/session) is fully cleared.
-
 - Added log output during the clearing process for easier debugging and tracking.
+
+### version 5.0.1-20
+
+🛠 iOS Changes
+- Change `Logger.h` to `CDVWKInAppBrowserLogger.h` to avoid conflict with other plugins.

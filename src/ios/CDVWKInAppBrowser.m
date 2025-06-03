@@ -18,7 +18,7 @@
  */
 
 #import "CDVWKInAppBrowser.h"
-#import "Logger.h"
+#import "CDVWKInAppBrowserLogger.h"
 
 #if __has_include("CDVWKProcessPoolFactory.h")
 #import "CDVWKProcessPoolFactory.h"
