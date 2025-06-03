@@ -18,6 +18,7 @@
  */
 
 #import "CDVWKInAppBrowser.h"
+#import "Logger.h"
 
 #if __has_include("CDVWKProcessPoolFactory.h")
 #import "CDVWKProcessPoolFactory.h"
@@ -127,78 +128,19 @@ NSString* avoidGoogleAuthDisallowedUserAgentKeywords = @"Safari/604.1";
 - (void)openInInAppBrowser:(NSURL*)url withOptions:(NSString*)options
 {
     CDVInAppBrowserOptions* browserOptions = [CDVInAppBrowserOptions parseOptions:options];
+    __weak __typeof(self) weakSelf = self;
 
-    WKWebsiteDataStore* dataStore = [WKWebsiteDataStore defaultDataStore];
-    if (browserOptions.cleardata) {
+    AppLogInfo(@"Starting to clear browser data...");
+    [self clearBrowserDataWithOptions:browserOptions completion:^{
+        AppLogInfo(@"Finished clearing browser data. Launching browser...");
+        weakSelf.shouldResetProcessPool = browserOptions.cleardata;
+        [weakSelf setupAndShowBrowserWithURL:url options:browserOptions];
+    }];
+}
 
-        NSDate* dateFrom = [NSDate dateWithTimeIntervalSince1970:0];
-        [dataStore removeDataOfTypes:[WKWebsiteDataStore allWebsiteDataTypes] modifiedSince:dateFrom completionHandler:^{
-            NSLog(@"Removed all WKWebView data");
-            self.inAppBrowserViewController.webView.configuration.processPool = [[WKProcessPool alloc] init]; // create new process pool to flush all data
-        }];
-    }
-
-    if (browserOptions.clearcache) {
-        bool isAtLeastiOS11 = false;
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000
-        if (@available(iOS 11.0, *)) {
-            isAtLeastiOS11 = true;
-        }
-#endif
-
-        if(isAtLeastiOS11){
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000
-            // Deletes all cookies
-            WKHTTPCookieStore* cookieStore = dataStore.httpCookieStore;
-            [cookieStore getAllCookies:^(NSArray* cookies) {
-                NSHTTPCookie* cookie;
-                for(cookie in cookies){
-                    [cookieStore deleteCookie:cookie completionHandler:nil];
-                }
-            }];
-#endif
-        }else{
-            // https://stackoverflow.com/a/31803708/777265
-            // Only deletes domain cookies (not session cookies)
-            [dataStore fetchDataRecordsOfTypes:[WKWebsiteDataStore allWebsiteDataTypes]
-             completionHandler:^(NSArray<WKWebsiteDataRecord *> * __nonnull records) {
-                 for (WKWebsiteDataRecord *record  in records){
-                     NSSet<NSString*>* dataTypes = record.dataTypes;
-                     if([dataTypes containsObject:WKWebsiteDataTypeCookies]){
-                         [[WKWebsiteDataStore defaultDataStore] removeDataOfTypes:record.dataTypes
-                               forDataRecords:@[record]
-                               completionHandler:^{}];
-                     }
-                 }
-             }];
-        }
-    }
-
-    if (browserOptions.clearsessioncache) {
-        bool isAtLeastiOS11 = false;
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000
-        if (@available(iOS 11.0, *)) {
-            isAtLeastiOS11 = true;
-        }
-#endif
-        if (isAtLeastiOS11) {
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000
-            // Deletes session cookies
-            WKHTTPCookieStore* cookieStore = dataStore.httpCookieStore;
-            [cookieStore getAllCookies:^(NSArray* cookies) {
-                NSHTTPCookie* cookie;
-                for(cookie in cookies){
-                    if(cookie.sessionOnly){
-                        [cookieStore deleteCookie:cookie completionHandler:nil];
-                    }
-                }
-            }];
-#endif
-        }else{
-            NSLog(@"clearsessioncache not available below iOS 11.0");
-        }
-    }
-
+// Configures and displays the in-app browser
+- (void)setupAndShowBrowserWithURL:(NSURL*)url options:(CDVInAppBrowserOptions*)browserOptions
+{
     if (self.inAppBrowserViewController == nil) {
         self.inAppBrowserViewController = [[CDVWKInAppBrowserViewController alloc] initWithBrowserOptions: browserOptions andSettings:self.commandDelegate.settings];
         self.inAppBrowserViewController.navigationDelegate = self;
@@ -206,6 +148,13 @@ NSString* avoidGoogleAuthDisallowedUserAgentKeywords = @"Safari/604.1";
         if ([self.viewController conformsToProtocol:@protocol(CDVScreenOrientationDelegate)]) {
             self.inAppBrowserViewController.orientationDelegate = (UIViewController <CDVScreenOrientationDelegate>*)self.viewController;
         }
+    }
+
+    // Reset process pool if flagged
+    if (self.shouldResetProcessPool) {
+        // create new process pool to flush all data
+        self.inAppBrowserViewController.webView.configuration.processPool = [[WKProcessPool alloc] init];
+        self.shouldResetProcessPool = NO;
     }
 
     [self.inAppBrowserViewController showLocationBar:browserOptions.location];
@@ -262,6 +211,111 @@ NSString* avoidGoogleAuthDisallowedUserAgentKeywords = @"Safari/604.1";
         [self show:nil withNoAnimate:browserOptions.hidden];
     }
 }
+
+// Clears browser data based on options
+- (void) clearBrowserDataWithOptions:(CDVInAppBrowserOptions*)browserOptions
+                completion:(void (^)(void))completion
+{
+    __weak __typeof(self) weakSelf = self;
+    WKWebsiteDataStore* dataStore = [WKWebsiteDataStore defaultDataStore];
+    dispatch_group_t cleanupGroup = dispatch_group_create();
+
+    if (browserOptions.cleardata) {
+        AppLogInfo(@"Starting to clear website data...");
+        dispatch_group_enter(cleanupGroup);
+        NSDate* dateFrom = [NSDate dateWithTimeIntervalSince1970:0];
+        [dataStore removeDataOfTypes:[WKWebsiteDataStore allWebsiteDataTypes] modifiedSince:dateFrom completionHandler:^{
+            AppLogInfo(@"Removed all website data.");
+            dispatch_group_leave(cleanupGroup);
+        }];
+    }
+
+    if (browserOptions.clearcache) {
+        AppLogInfo(@"Starting to clear website cache...");
+        dispatch_group_enter(cleanupGroup);
+        [weakSelf clearCookiesWithDataStore:dataStore onlySessionCookies:NO completion:^{
+            AppLogInfo(@"Cleared website cache.");
+            dispatch_group_leave(cleanupGroup);
+        }];
+    }
+
+    if (browserOptions.clearsessioncache) {
+        AppLogInfo(@"Starting to clear website session cache...");
+        dispatch_group_enter(cleanupGroup);
+        [weakSelf clearCookiesWithDataStore:dataStore onlySessionCookies:YES completion:^{
+            AppLogInfo(@"Cleared website session cache.");
+            dispatch_group_leave(cleanupGroup);
+        }];
+    }
+
+    dispatch_group_notify(cleanupGroup, dispatch_get_main_queue(), ^{
+        AppLogInfo(@"All browser data cleanup tasks complete.");
+        if (completion) completion();
+    });
+}
+
+// Clears cookies from the given WKWebsiteDataStore.
+// @param dataStore The WKWebsiteDataStore to clear cookies from.
+// @param onlySession Whether to clear only session cookies (YES) or all cookies (NO).
+// @param completion A block to be called once the deletion is complete.
+- (void)clearCookiesWithDataStore:(WKWebsiteDataStore *)dataStore
+              onlySessionCookies:(BOOL)onlySession
+                       completion:(void (^)(void))completion
+{
+   void (^safeCallCompletion)(void) = ^{
+        if (completion) completion();
+    };
+
+    if (@available(iOS 11.0, *)) {
+        // On iOS 11+, use WKHTTPCookieStore to manage cookies
+        WKHTTPCookieStore* cookieStore = dataStore.httpCookieStore;
+        [cookieStore getAllCookies:^(NSArray<NSHTTPCookie*>* cookies) {
+            if (cookies.count == 0) {
+                safeCallCompletion();
+                return;
+            }
+
+            // Use dispatch group to wait for all deletions to complete
+            dispatch_group_t group = dispatch_group_create();
+
+            for (NSHTTPCookie* cookie in cookies) {
+                // If onlySession is YES, skip non-session cookies
+                if (!onlySession || cookie.sessionOnly) {
+                    dispatch_group_enter(group);
+                    [cookieStore deleteCookie:cookie completionHandler:^{
+                        dispatch_group_leave(group);
+                    }];
+                }
+            }
+
+            // Notify completion once all cookies have been deleted
+            dispatch_group_notify(group, dispatch_get_main_queue(), ^{
+                safeCallCompletion();
+            });
+        }];
+    } else {
+        // Session-only cookie deletion is not supported below iOS 11
+        if (onlySession) {
+            NSLog(@"[clearCookies] Cannot clear session cookies on iOS <11");
+            if (completion) completion();
+            return;
+        }
+
+        // On iOS <11, remove cookies using legacy API
+        NSSet *cookieTypes = [NSSet setWithObject:WKWebsiteDataTypeCookies];
+        [dataStore fetchDataRecordsOfTypes:cookieTypes completionHandler:^(NSArray<WKWebsiteDataRecord *> *records) {
+            if (records.count == 0) {
+                safeCallCompletion();
+                return;
+            }
+
+            [dataStore removeDataOfTypes:cookieTypes forDataRecords:records completionHandler:^{
+                safeCallCompletion();
+            }];
+        }];
+    }
+}
+
 
 - (void)show:(CDVInvokedUrlCommand*)command{
     [self show:command withNoAnimate:NO];

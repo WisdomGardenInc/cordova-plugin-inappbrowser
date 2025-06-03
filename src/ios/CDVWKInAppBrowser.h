@@ -38,6 +38,7 @@
 @property (nonatomic, retain) CDVWKInAppBrowserViewController* inAppBrowserViewController;
 @property (nonatomic, copy) NSString* callbackId;
 @property (nonatomic, copy) NSRegularExpression *callbackIdPattern;
+@property (nonatomic, assign) BOOL shouldResetProcessPool;
 
 + (id) getInstance;
 - (void)open:(CDVInvokedUrlCommand*)command;

@@ -43,3 +43,10 @@ Delete [READ_MEDIA_IMAGES,READ_MEDIA_VIDEO,READ_MEDIA_AUDIO] permission on Andro
 
 ### version 5.0.1-18
 Application.OpenURL doesn't work on iOS 18+
+
+### version 5.0.1-19
+
+🛠 iOS Changes
+- InAppBrowser is now initialized only after browser data (cookies/cache/session) is fully cleared.
+
+- Added log output during the clearing process for easier debugging and tracking.
