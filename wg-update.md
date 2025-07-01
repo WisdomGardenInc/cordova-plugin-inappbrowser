@@ -54,3 +54,10 @@ Application.OpenURL doesn't work on iOS 18+
 
 🛠 iOS Changes
 - Change `Logger.h` to `CDVWKInAppBrowserLogger.h` to avoid conflict with other plugins.
+
+### version 5.0.1-21
+
+🛠 iOS Changes
+- Fixed browser not exiting properly when `browserOptions.hidden` is true
+- Fixed backend cookie invalidation caused by set `browserOptions.session` to cookies
+- Fixed browserOptions not updating on multiple opens

@@ -148,6 +148,8 @@ NSString* avoidGoogleAuthDisallowedUserAgentKeywords = @"Safari/604.1";
         if ([self.viewController conformsToProtocol:@protocol(CDVScreenOrientationDelegate)]) {
             self.inAppBrowserViewController.orientationDelegate = (UIViewController <CDVScreenOrientationDelegate>*)self.viewController;
         }
+    } else {
+        [self.inAppBrowserViewController updateBrowserOptions:browserOptions];
     }
 
     // Reset process pool if flagged
@@ -297,7 +299,7 @@ NSString* avoidGoogleAuthDisallowedUserAgentKeywords = @"Safari/604.1";
         // Session-only cookie deletion is not supported below iOS 11
         if (onlySession) {
             NSLog(@"[clearCookies] Cannot clear session cookies on iOS <11");
-            if (completion) completion();
+            safeCallCompletion();
             return;
         }
 
@@ -781,6 +783,12 @@ BOOL isExiting = FALSE;
     return config;
 }
 
+- (void)updateBrowserOptions:(CDVInAppBrowserOptions*)newOptions {
+    if (self != nil) {
+        _browserOptions = newOptions;
+    }
+}
+
 - (id)initWithBrowserOptions: (CDVInAppBrowserOptions*) browserOptions andSettings:(NSDictionary *)settings
 {
     self = [super init];
@@ -1188,13 +1196,14 @@ BOOL isExiting = FALSE;
 {
     self.currentURL = nil;
 
-    __weak UIViewController* weakSelf = self;
-
+    __weak typeof(self) weakSelf = self;
     // Run later to avoid the "took a long time" log message.
     dispatch_async(dispatch_get_main_queue(), ^{
         isExiting = TRUE;
         lastReducedStatusBarHeight = 0.0;
-        if ([weakSelf respondsToSelector:@selector(presentingViewController)]) {
+        if(self->_browserOptions.hidden){
+            [weakSelf viewDidDisappear:nil];
+        }else if ([weakSelf respondsToSelector:@selector(presentingViewController)]) {
             [[weakSelf presentingViewController] dismissViewControllerAnimated:YES completion:nil];
         } else {
             [[weakSelf parentViewController] dismissViewControllerAnimated:YES completion:nil];
@@ -1202,20 +1211,51 @@ BOOL isExiting = FALSE;
     });
 }
 
+- (void)setCookiesForURL:(NSURL*)url
+    completion:(void (^)(void))completion
+{
+    void (^safeCallCompletion)(void) = ^{
+        if (completion) completion();
+    };
+
+    NSString *session = _browserOptions.session;
+    if (!session || [session isEqualToString:@"no-session"]) {
+        safeCallCompletion();
+        return;
+    }
+
+    NSDictionary *cookieProps = @{
+        NSHTTPCookieName: @"session",
+        NSHTTPCookieValue: session,
+        NSHTTPCookieDomain: url.host ?: @"",
+        NSHTTPCookiePath: @"/",
+        NSHTTPCookieSecure: @(YES),
+    };
+    if (@available(iOS 11.0, *)) {
+        WKHTTPCookieStore *cookieStore = self.webView.configuration.websiteDataStore.httpCookieStore;
+        NSHTTPCookie *cookie = [NSHTTPCookie cookieWithProperties:cookieProps];
+        [cookieStore setCookie:cookie completionHandler:^{
+            safeCallCompletion();
+        }];
+    } else {
+        NSHTTPCookie *cookie = [NSHTTPCookie cookieWithProperties:cookieProps];
+        [[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookie:cookie];
+
+        NSString *cookieHeader = [NSString stringWithFormat:@"session=%@", session];
+        [[NSURLSession sharedSession].configuration.HTTPAdditionalHeaders setValue:cookieHeader forKey:@"Cookie"];
+        safeCallCompletion();
+    }
+}
+
 - (void)navigateTo:(NSURL*)url
 {
     if ([url.scheme isEqualToString:@"file"]) {
         [self.webView loadFileURL:url allowingReadAccessToURL:url];
     } else {
-        NSMutableURLRequest* request = [[NSMutableURLRequest alloc] initWithURL:url];
-
-        // 不检查路径,直接在所有请求中添加 Cookie
-        // 如果 app 传递过来 session，都加到请求头里去
-        if (![_browserOptions.session isEqualToString:@"no-session"]) {
-            [request setValue:[@"session=" stringByAppendingString:_browserOptions.session] forHTTPHeaderField:@"Cookie"];
-        }
-
-        [self.webView loadRequest:request];
+        __weak typeof(self) weakSelf = self;
+        [self setCookiesForURL:url completion:^{
+            [weakSelf.webView loadRequest:[NSURLRequest requestWithURL:url]];
+        }];
     }
 }
 
