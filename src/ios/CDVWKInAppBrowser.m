@@ -474,6 +474,7 @@ NSString* avoidGoogleAuthDisallowedUserAgentKeywords = @"Safari/604.1";
 
 //Synchronus helper for javascript evaluation
 - (void)evaluateJavaScript:(NSString *)script {
+    if (self.inAppBrowserViewController == nil || self.inAppBrowserViewController.webView == nil) return;
     __block NSString* _script = script;
     [self.inAppBrowserViewController.webView evaluateJavaScript:script completionHandler:^(id result, NSError *error) {
         if (error == nil) {

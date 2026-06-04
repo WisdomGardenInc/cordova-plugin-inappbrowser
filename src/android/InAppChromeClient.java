@@ -155,23 +155,24 @@ public class InAppChromeClient extends WebChromeClient {
     @Override
     public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
         WebView inAppWebView = view;
+        final WebView newWebView = new WebView(view.getContext());
         final WebViewClient webViewClient =
                 new WebViewClient() {
                     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
                     @Override
                     public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                         inAppWebView.loadUrl(request.getUrl().toString());
+                        view.post(() -> { view.stopLoading(); view.destroy(); });
                         return true;
                     }
 
                     @Override
                     public boolean shouldOverrideUrlLoading(WebView view, String url) {
                         inAppWebView.loadUrl(url);
+                        view.post(() -> { view.stopLoading(); view.destroy(); });
                         return true;
                     }
                 };
-
-        final WebView newWebView = new WebView(view.getContext());
         newWebView.setWebViewClient(webViewClient);
 
         final WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;

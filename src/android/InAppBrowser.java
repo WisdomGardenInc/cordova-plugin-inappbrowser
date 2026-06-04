@@ -281,6 +281,7 @@ public class InAppBrowser extends CordovaPlugin {
                 @SuppressLint("NewApi")
                 @Override
                 public void run() {
+                    if (inAppWebView == null) return;
                     if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) {
                         currentClient.waitForBeforeload = false;
                         inAppWebView.setWebViewClient(currentClient);
@@ -370,7 +371,7 @@ public class InAppBrowser extends CordovaPlugin {
      */
     @Override
     public void onPause(boolean multitasking) {
-        if (shouldPauseInAppBrowser) {
+        if (shouldPauseInAppBrowser && inAppWebView != null) {
             inAppWebView.onPause();
         }
     }
@@ -380,7 +381,7 @@ public class InAppBrowser extends CordovaPlugin {
      */
     @Override
     public void onResume(boolean multitasking) {
-        if (shouldPauseInAppBrowser) {
+        if (shouldPauseInAppBrowser && inAppWebView != null) {
             inAppWebView.onResume();
         }
     }
@@ -426,6 +427,7 @@ public class InAppBrowser extends CordovaPlugin {
                 @SuppressLint("NewApi")
                 @Override
                 public void run() {
+                    if (inAppWebView == null) return;
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
                         // This action will have the side-effect of blurring the currently focused element
                         inAppWebView.loadUrl("javascript:" + finalScriptToInject);
@@ -557,6 +559,9 @@ public class InAppBrowser extends CordovaPlugin {
                             dialog.dismiss();
                             dialog = null;
                         }
+                        view.stopLoading();
+                        view.destroy();
+                        inAppWebView = null;
                     }
                 });
                 // NB: From SDK 19: "If you call methods on WebView from any thread

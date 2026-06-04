@@ -61,3 +61,14 @@ Application.OpenURL doesn't work on iOS 18+
 - Fixed browser not exiting properly when `browserOptions.hidden` is true
 - Fixed backend cookie invalidation caused by set `browserOptions.session` to cookies
 - Fixed browserOptions not updating on multiple opens
+
+### version 5.0.1-22
+
+🛠 Android Changes
+- Fixed WebView not truly destroyed on close — was left loaded with `about:blank` instead of being released
+- Fixed potential NPE in `onPause`/`onResume` after WebView is destroyed
+- Fixed potential NPE in `loadAfterBeforeload` and `injectDeferredObject` due to race condition between `runOnUiThread` and `closeDialog()`
+- Fixed memory leak: temporary WebView created in `onCreateWindow` (for `target="_blank"` handling) is now properly destroyed after URL is intercepted
+
+🛠 iOS Changes
+- Fixed potential crash in `evaluateJavaScript` when called after browser is closed
