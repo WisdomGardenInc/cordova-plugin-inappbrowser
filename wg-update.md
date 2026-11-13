@@ -72,3 +72,30 @@ Application.OpenURL doesn't work on iOS 18+
 
 🛠 iOS Changes
 - Fixed potential crash in `evaluateJavaScript` when called after browser is closed
+
+### version 5.0.1-23
+
+- Adapt the browser window, toolbar appearance and top safe area for iOS 27.
+- Export `WGInAppBrowserOptions` from `types/options.d.ts`, with documented `session`, `avoidGoogleAuthDisallowedUserAgent` and `safearea` options.
+
+#### Type usage
+
+Extend the Ionic Native options:
+
+```ts
+import type { InAppBrowserOptions } from "@ionic-native/in-app-browser";
+import type { WGInAppBrowserOptions } from "@wisdomgarden/cordova-plugin-inappbrowser/types/options";
+
+interface BrowserOpenOptions extends InAppBrowserOptions, WGInAppBrowserOptions {}
+```
+
+Or augment Ionic Native in an application `.d.ts` file:
+
+```ts
+import "@ionic-native/in-app-browser";
+import type { WGInAppBrowserOptions } from "@wisdomgarden/cordova-plugin-inappbrowser/types/options";
+
+declare module "@ionic-native/in-app-browser" {
+  interface InAppBrowserOptions extends WGInAppBrowserOptions {}
+}
+```

@@ -319,6 +319,29 @@ NSString* avoidGoogleAuthDisallowedUserAgentKeywords = @"Safari/604.1";
 }
 
 
+- (UIWindow *)createTmpWindowWithFrame:(CGRect)frame
+{
+    if (@available(iOS 13.0, *)) {
+        // Keep the browser in the same scene as the hosting WebView.
+        UIWindowScene *windowScene = self.viewController.view.window.windowScene;
+        if (!windowScene) {
+            for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+                if ([scene isKindOfClass:[UIWindowScene class]] &&
+                    scene.activationState == UISceneActivationStateForegroundActive) {
+                    windowScene = (UIWindowScene *)scene;
+                    break;
+                }
+            }
+        }
+        if (windowScene) {
+            UIWindow *window = [[UIWindow alloc] initWithWindowScene:windowScene];
+            window.frame = frame;
+            return window;
+        }
+    }
+    return [[UIWindow alloc] initWithFrame:frame];
+}
+
 - (void)show:(CDVInvokedUrlCommand*)command{
     [self show:command withNoAnimate:NO];
 }
@@ -362,7 +385,7 @@ NSString* avoidGoogleAuthDisallowedUserAgentKeywords = @"Safari/604.1";
                 if(initHidden && osVersion < 11){
                    frame.origin.x = -10000;
                 }
-                strongSelf->tmpWindow = [[UIWindow alloc] initWithFrame:frame];
+                strongSelf->tmpWindow = [strongSelf createTmpWindowWithFrame:frame];
             }
             UIViewController *tmpController = [[UIViewController alloc] init];
             [strongSelf->tmpWindow setRootViewController:tmpController];
@@ -787,6 +810,10 @@ BOOL isExiting = FALSE;
 - (void)updateBrowserOptions:(CDVInAppBrowserOptions*)newOptions {
     if (self != nil) {
         _browserOptions = newOptions;
+        if (@available(iOS 26.0, *)) {
+            [self updateToolbarAppearance];
+            [self.view setNeedsLayout];
+        }
     }
 }
 
@@ -821,6 +848,25 @@ BOOL isExiting = FALSE;
 
 -(void)dealloc {
     //NSLog(@"dealloc");
+}
+
+- (void)updateToolbarAppearance
+{
+    if (@available(iOS 26.0, *)) {
+        UIColor *toolbarColor = _browserOptions.toolbarcolor != nil
+            ? [self colorFromHexString:_browserOptions.toolbarcolor] : [UIColor blackColor];
+        UIToolbarAppearance *appearance = [[UIToolbarAppearance alloc] init];
+        [appearance configureWithOpaqueBackground];
+        appearance.backgroundColor = [toolbarColor colorWithAlphaComponent:1.0];
+        self.toolbar.standardAppearance = appearance;
+        self.toolbar.scrollEdgeAppearance = appearance;
+        self.toolbar.compactAppearance = appearance;
+        self.toolbar.compactScrollEdgeAppearance = appearance;
+        self.toolbar.barTintColor = appearance.backgroundColor;
+        self.toolbar.backgroundColor = appearance.backgroundColor;
+        self.toolbar.translucent = NO;
+        self.toolbar.opaque = YES;
+    }
 }
 
 - (void)createViews
@@ -887,6 +933,9 @@ BOOL isExiting = FALSE;
     self.webView.navigationDelegate = self;
     self.webView.UIDelegate = self.webViewUIDelegate;
     self.webView.backgroundColor = [UIColor whiteColor];
+    if (@available(iOS 26.0, *)) {
+        self.webView.scrollView.topEdgeEffect.hidden = YES;
+    }
     if ([self settingForKey:@"OverrideUserAgent"] != nil) {
         self.webView.customUserAgent = [self settingForKey:@"OverrideUserAgent"];
     }
@@ -959,6 +1008,10 @@ BOOL isExiting = FALSE;
     if (!_browserOptions.toolbartranslucent) { // Set toolbar translucent to no if user sets it in options
       self.toolbar.translucent = NO;
     }
+    if (@available(iOS 26.0, *)) {
+        // Keep the legacy solid toolbar instead of revealing the presenting page.
+        [self updateToolbarAppearance];
+    }
 
     CGFloat labelInset = 5.0;
     float locationBarY = toolbarIsAtBottom ? self.view.bounds.size.height - FOOTER_HEIGHT : self.view.bounds.size.height - LOCATIONBAR_HEIGHT;
@@ -1021,7 +1074,14 @@ BOOL isExiting = FALSE;
         [self.toolbar setItems:@[self.closeButton, flexibleSpaceButton, self.backButton, fixedSpaceButton, self.forwardButton]];
     }
 
-    self.view.backgroundColor = [UIColor clearColor];
+    if (@available(iOS 26.0, *)) {
+        self.closeButton.hidesSharedBackground = YES;
+        self.backButton.hidesSharedBackground = YES;
+        self.forwardButton.hidesSharedBackground = YES;
+        self.view.backgroundColor = [UIColor systemBackgroundColor];
+    } else {
+        self.view.backgroundColor = [UIColor clearColor];
+    }
     [self.view addSubview:self.toolbar];
     [self.view addSubview:self.addressLabel];
     [self.view addSubview:self.spinner];
@@ -1047,6 +1107,9 @@ BOOL isExiting = FALSE;
     self.closeButton.enabled = YES;
     // If color on closebutton is requested then initialize with that that color, otherwise use initialize with default
     self.closeButton.tintColor = colorString != nil ? [self colorFromHexString:colorString] : [UIColor colorWithRed:60.0 / 255.0 green:136.0 / 255.0 blue:230.0 / 255.0 alpha:1];
+    if (@available(iOS 26.0, *)) {
+        self.closeButton.hidesSharedBackground = YES;
+    }
 
     NSMutableArray* items = [self.toolbar.items mutableCopy];
     [items replaceObjectAtIndex:buttonIndex withObject:self.closeButton];
@@ -1170,6 +1233,14 @@ BOOL isExiting = FALSE;
     [super viewDidLoad];
 }
 
+- (void)viewDidLayoutSubviews
+{
+    [super viewDidLayoutSubviews];
+    if (@available(iOS 26.0, *)) {
+        [self rePositionViews];
+    }
+}
+
 - (void)viewDidDisappear:(BOOL)animated
 {
     [super viewDidDisappear:animated];
@@ -1287,6 +1358,31 @@ BOOL isExiting = FALSE;
 }
 
 - (void) rePositionViews {
+    if (@available(iOS 26.0, *)) {
+        // Third-party pages may not handle safe areas. Keep their viewport below the status bar.
+        CGRect bounds = self.view.bounds;
+        CGFloat topInset = _browserOptions.safearea ? self.view.safeAreaInsets.top : 0;
+        CGFloat contentBottom = CGRectGetMaxY(bounds);
+        BOOL toolbarVisible = !self.toolbar.hidden;
+        BOOL toolbarAtTop = [_browserOptions.toolbarposition isEqualToString:kInAppBrowserToolbarBarPositionTop];
+        CGFloat topToolbarHeight = toolbarVisible && toolbarAtTop ? TOOLBAR_HEIGHT : 0;
+        CGFloat bottomToolbarHeight = toolbarVisible && !toolbarAtTop ? TOOLBAR_HEIGHT : 0;
+        CGFloat locationHeight = self.addressLabel.hidden ? 0 : LOCATIONBAR_HEIGHT;
+        CGFloat webTop = CGRectGetMinY(bounds) + topInset + topToolbarHeight;
+        CGFloat webBottom = contentBottom - bottomToolbarHeight - locationHeight;
+        self.webView.frame = CGRectMake(CGRectGetMinX(bounds), webTop, bounds.size.width, MAX(0, webBottom - webTop));
+        if (toolbarVisible) {
+            CGFloat toolbarY = toolbarAtTop ? CGRectGetMinY(bounds) + topInset : contentBottom - TOOLBAR_HEIGHT;
+            self.toolbar.frame = CGRectMake(CGRectGetMinX(bounds), toolbarY, bounds.size.width, TOOLBAR_HEIGHT);
+        }
+        if (!self.addressLabel.hidden) {
+            CGRect labelFrame = self.addressLabel.frame;
+            labelFrame.origin.y = webBottom;
+            labelFrame.size.width = MAX(0, bounds.size.width - labelFrame.origin.x);
+            self.addressLabel.frame = labelFrame;
+        }
+        return;
+    }
     CGRect viewBounds = [self.webView bounds];
     CGFloat statusBarHeight = [self getStatusBarOffset];
 

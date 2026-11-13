@@ -27,6 +27,7 @@
         // default values
         self.location = YES;
         self.toolbar = YES;
+        self.safearea = YES;
         self.closebuttoncaption = nil;
         self.toolbarposition = @"bottom";
         self.cleardata = NO;

@@ -1,8 +1,13 @@
 {
   "name": "@wisdomgarden/cordova-plugin-inappbrowser",
-  "version": "5.0.1-22",
+  "version": "5.0.1-23",
   "description": "Cordova InAppBrowser Plugin",
   "types": "./types/index.d.ts",
+  "publishConfig": {
+    "access": "public",
+    "tag": "latest",
+    "registry": "https://registry.npmjs.org/"
+  },
   "cordova": {
     "id": "wg-cordova-plugin-inappbrowser",
     "platforms": [
